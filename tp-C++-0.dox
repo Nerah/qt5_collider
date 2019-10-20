@@ -1,0 +1,378 @@
+/**
+
+   \page cpp_tp0 TP0 Programmation objet et polymorphisme, scène graphique et collisions, librairie Qt
+
+
+
+   \section cpp_tp0_1 1 - Objectifs, pointeurs utiles
+   
+   L'objectif de ce TP est de vous familiariser avec la programmation
+   objet classique en C++. L'idée est de partir d'une base de code
+   déjà conséquente et de l'enrichir progressivement. Le focus est sur
+   le polymorphisme (donc les méthodes virtuelles). Le prétexte est de
+   vous faire travailler sur un programme graphique temps réel, qui
+   gère plein d'objets différents dont on devra détecter les
+   collisions.
+
+   La généricité se fera donc au travers du polymorphisme. A l'issue de cette
+   séance, vous maîtriserez:
+   
+   - la déclaration d'une classe/structure, de ses constructeurs, de ses données membre
+   - la définition des méthodes de la classe dans un fichier source
+   - la rédéfinition de méthodes virtuelles
+   - l'utilisation de certains éléments de la librairie graphique Qt
+      
+   Les sites suivants pourront être utile pendant le TP:
+   - [http://www.cplusplus.com/ Site C++: tutoriels, références]
+   - [http://www.parashift.com/c++-faq-lite/index.html C++ FAQ]
+   - [https://doc.qt.io/qt-5]
+
+
+   @note Il n'y a pas d'IDE recommandé plus particulièrement qu'un autre, mais je constate:
+   - un étudiant sous Linux avec un éditeur de texte (vim, emacs, sublime text, gedit) et la compilation via \c make démarre le TP en 5 minutes.
+   - un étudiant avec son IDE déjà bien configuré avant d'arriver en TP gagne 1h sur l'étudiant qui installe son IDE pendant le TP.
+   - la plupart des étudiants utilisent CodeBlocks, parfois Eclipse, parfois Visual C++ ou CLion
+   - Windows entraîne des problèmes supplémentaires: bibliothèques
+     manquantes, programme exécuté qui ne s'arrête jamais (vérifiez
+     votre antivirus, certains avaient des problèmes avec AVAST),
+     gestion des fichiers bizarre (Windows a deux modes: texte et
+     binaire; il faut donc rajouter le mode `ios::binary` ou `ios::text` à l'ouverture des fichiers)
+
+[TOC]
+
+   \section cpp_tp0_2 2 - Prise en main du code, compilation avec Qt
+   
+   On va donne une archive avec quelques fichiers tout prêts:
+
+   - collider.pro décrit la configuration du rpojet pour Qt. C'est là
+     qu'on précise les fichiers sources, les exécutables, les
+     dépendances à d'autres bibliothèques, les options de compilation.
+
+   - collider.qrc décrit les ressources propres au projet, ici
+     quelques images. Si vous voulez rajouter des images au projet,
+     listez-les aussi ici.
+
+   - collider.cpp est le programme principal qui initialise
+     l'application Qt et instancie les formes graphiques
+
+   - objects.hpp est le fichier entête de objects.cpp, qui définit
+     quelques constantes ainsi que les classes abstraites et concrètes
+     des formes graphiques.
+
+   - objects.cpp est le fichier source donnant le corps des méthodes
+     déclarées dans objects.hpp
+
+   Pour compiler un projet Qt, on utilise `qmake`, qui va créer un
+   fichier `Makefile`, puis `make`. Si vous avez installé Qt dans un
+   répertoire exotique, il faut donne le chemin complet de
+   `qmake`. Ensuite tout est bien configuré.
+
+   \verbatim
+$ qmake
+$ make
+$ ./collider
+   \endverbatim
+
+   Normalement, vous avez un programme qui vous affiche quelque chose du genre ci-dessous:
+
+   \image html tp0-2.png "Application Qt initiale"
+
+   Prenez le temps de regarder le code fourni (en commençant par
+   collider.cpp, puis objects.hpp and objects.cpp) et éventuellement
+   chercher quelques explications dans la doc Qt
+   [https://doc.qt.io/qt-5].
+
+   On notera la hiérarchie suivante pour nos formes graphiques (cf. class GraphicalShape):
+
+   \image html class-hierarchy.png "Hiérarchie des classes utilisées pour représenter les éléments graphiques"
+
+   Evidemment, Qt offre déjà pas mal de choses dans la classe
+   QGraphicsItem, mais nous allons faire nos propres formes graphiques
+   avec algorithme randomisé de détection de collisions.
+
+   - la classe GraphicalShape est la classe de base pour nos
+     formes. C'est une classe abstraite, qui hérite de QGraphicsItem
+     et qui définit les méthodes virtuelles pures
+     GraphicalShape::isInside et GraphicalShape::randomPoint.
+
+   - la classe MasterShape hérite de GraphicalShape et définit une
+     forme maître ou principale. C'est elle qui est chargée de
+     détecter les collisions, de vérifier que la forme reste dans les
+     limites de la fenêtre. Elle contient aussi un pointeur vers sa
+     forme graphique fille, qui est l'assemblage des formes graphiques
+     qui la compose.
+
+   - la classe Asteroid hérite de MasterShape et définit un objet
+     astéroïde tout simple, qui se compose d'un seul disque et qui se
+     déplace toujours dans la même direction et à la même vitesse.
+
+   - la classe Disk hérite de GraphicalShape et représente une forme
+     graphique toute simple, un disque de rayon donné centré en
+     (0,0). Notez que cette classe connaît sa MasterShape, ce qui lui
+     permet de changer de couleur si une collision a été détectée.
+   
+   - la classe LogicalScene stocke les objets graphiques "maîtres" et
+     fournit les méthodes pour détecter les collisions entre ces
+     objets. Dans le code fourni, 100 points sont testés entre chaque
+     paire d'objets.
+
+    
+
+   \section cpp_tp0_3 3 - Premiers objets graphiques
+
+   Vous allez définir deux classes. D'abord une classe `Rectangle`,
+   qui, sur le modèle de Disk, hérite de GraphicalShape. Elle
+   représente un rectangle quelconque. Pour afficher un rectangle avec
+   Qt, on utilise la méthode QPainter::drawRect. N'oubliez pas de
+   redéfinir toutes les méthodes abstraites (i.e. virtuelles pures) de
+   GraphicalShape.
+
+   Vous ferez ensuite une classe `SpaceTruck`, qui hérite de
+   MasterShape, et dont la représentation graphique est un rectangle
+   vert, qui devient jaune lors d'une collision. Au niveau des
+   mouvements, il se déplacera en avant et en tournant à droite en
+   permanence. On utilisera opportunément les méthodes héritées de
+   QGraphicsItem, `QGraphicsItem::rotation` et
+   `QGraphicsItem::setRotation`, pour faire ce mouvement dans
+   `SpaceTruck::advance`.
+
+   Voilà un résultat possible avec 10 astéroides, 5 space trucks de taille 100x20.
+
+   \image html tp0-3s.png "Astéroïdes et space trucks..."
+
+   @note On observe que la rotation s'applique avant le déplacement.
+
+   \section cpp_tp0_4 4 - Objets complexes par assemblage de formes simples
+
+   On va fabriquer des formes plus complexes par assemblage de formes
+   simples. Pour ce faire on va créer une forme graphique `Union`, qui
+   hérite de GraphicalShape, et dont le seul rôle est de grouper deux
+   GraphicalShape. On note les points suivants:
+
+   - dans `Union::randomPoint` : il faudra tirer une fois sur deux un
+     point dans la forme 1 et un point dans la forme 2. Il suffit pour
+     faire cela de stocker une donnée membre booléenne que l'on
+     changera à chaque appel.
+
+   - dans `Union::isInside` il faudra bien tester si le point
+     appartient à une des formes.
+
+   - dans `Union::boundingRect' on note que Qt donne un `operator|`
+     sur les QRect pour calculer le rectangle englobant de deux
+     rectangles.
+
+   On pourra ensuite mettre à jour `SpaceTruck` pour qu'il soit composé
+   de formes simples différentes.
+
+\code
+// In SpaceTruck constructor
+  Rectangle* d1 = new Rectangle( QPointF( -80, -10 ), QPointF( 0, 10 ), this );
+  Rectangle* d2 = new Rectangle( QPointF( 10, -10 ), QPointF( 30, 10 ), this );
+  Rectangle* d3 = new Rectangle( QPointF( 0, -3 ), QPointF( 10, 3 ), this );
+  Union*    u23 = new Union( d2, d3 );
+  Union*      u = new Union( d1, u23 );
+  // Tells the space truck that it is composed of the union of the previous shapes.
+  this->setGraphicalShape( u );
+\endcode
+
+   \image html tp0-4s.png "De plus jolis space trucks..."
+
+
+   \section cpp_tp0_5 5 - Transformations géométriques
+
+   Pour composer des formes complexes, il nous reste à nous donner des
+   transformations géométriques pour pouvoir tourner et placer nos
+   formes. On va définir une classe `Transformation`, qui prendra en
+   paramètre un GraphicalShape \a f, un vecteur de déplacement \a dx
+   et un angle de rotation \angle:
+
+\code
+struct Transformation: public GraphicalShape {
+  GraphicalShape( GraphicalShape* f, QPointF dx, qreal angle );
+  ...
+};
+\endcode
+
+   Il faut alors utiliser `this->setPos` et `this->setRotation` pour
+   placer `Transformation` correctement dans son repère. On veillera
+   ensuite à redéfinir les méthodes usuelles:
+
+   - dans `Transformation::randomPoint` : on tire le point aléatoire
+     dans la forme \a f, puis on applique la rotation et enfin la
+     translation.
+
+   - dans `Transformation::isInside( p )` : on va dans l'autre sens,
+     on soustrait le déplacement, on applique la rotation inverse et
+     on demande à \a f si le point obtenu est dedans.
+
+   - dans `Transformation::boundingRect' il suffit d'utiliser la
+     méthode héritée `mapRectToParent`.
+
+   On pourra alors s'amuser à faire des objets plus complexes en
+   composant nos formes. On pourra ainsi créer un vaisseau spatial
+   sous la forme d'une classe `Enterprise` qui hérite de MasterShape.
+   On choisira une couleur grise pour le vaisseau et rouge en cas de
+   collision.
+
+   Le code suivant vous plae les éléments graphiques dans le
+   constructeur de `Enterprise`:
+
+\code
+  Rectangle*      r1 = new Rectangle( QPointF( -100, -8 ), QPointF( 0, 8 ), this );
+  Rectangle*      r2 = new Rectangle( QPointF( -100, -8 ), QPointF( 0, 8 ), this );
+  Rectangle*      rb = new Rectangle( QPointF( -40, -9 ), QPointF( 40, 9 ), this );
+  Rectangle*      s1 = new Rectangle( QPointF( -25, -5 ), QPointF( 25, 5 ), this );
+  Rectangle*      s2 = new Rectangle( QPointF( -25, -5 ), QPointF( 25, 5 ), this );
+  Disk*            d = new Disk( 40.0, this );
+  Transformation* t1 = new Transformation( r1, QPointF( 0., 40.0 ) );
+  Transformation* t2 = new Transformation( r2, QPointF( 0., -40.0 ) );
+  Transformation* td = new Transformation( d, QPointF( 70., 0.0 ) );
+  Transformation*ts1 = new Transformation( s1, QPointF(-30.0,0.0), 0.0 );
+  Transformation*us1 = new Transformation( ts1, QPointF(0.0,0.0), 45.0 );
+  Transformation*ts2 = new Transformation( s2, QPointF(-30.0,0.0), 0.0 );
+  Transformation*us2 = new Transformation( ts2, QPointF(0.0,0.0), -45.0 );
+  Union*        back = new Union( t1, t2 );
+  Union*        head = new Union( rb, td );
+  Union*        legs = new Union( us1, us2 );
+  Union*        body = new Union( legs, back );
+  Union*         all = new Union( head, body );
+  this->setGraphicalShape( all );
+\endcode
+
+  On pourra ensuite s'amuser à faire des déplacements un peu plus
+  aléatoires pour le vaisseau. Vous devriez avoir maintenant une
+  application qui ressemble à ça:
+
+  \image html tp0-5s.png "This is starship USS Enterprise NCC-1701 exploring new galaxies, but stalled in traffic jams..."
+
+  \section cpp_tp0_6 6 - Des images, des figures
+
+  En fait, on peut étendre le principe précédent à des images
+  quelconques. L'idée est la suivante:
+
+  - Une image a une partie "pleine" (là où il y a des couleurs) et une
+    partie "vide" (là où elle est transparente, c'est-à-dire là où son
+    "alpha-channel" est à 0).
+
+  - A partir du QPixmap de l'image, on fabrique un QBitmap qui est son
+    masque plein/vide.
+
+  - tirer un point aléatoire dans une telle image revient à tirer un
+    point aléatoire dans l'image et à le retirer tant qu'on tombe dans
+    un pixel vide du masque.
+
+  - un point est dans l'image (isInside) lorsqu'il tombe dans un
+    pixel plein du masque.
+
+  Pour charger une image, il suffit de déclarer un QPixmap et de lui
+  donner un nom de fichier listé dans les ressources (cf
+  `collider.qrc`). On utilisera le format GIF qui peut stocker de la
+  transparence.
+
+\code
+  QPixmap asteroid_pixmap(":/images/asteroid.gif");
+\endcode
+
+  On écrira donc ensuite une classe `ImageShape` qui hérite de
+  GraphicalShape. On la construit en lui donnant un QPixmap et un
+  MasterShape.
+
+\code
+ImageShape::ImageShape( const QPixmap & pixmap, const MasterShape* master_shape )
+  : _pixmap( pixmap ), _master_shape( master_shape )
+{
+  _mask = _pixmap.mask();
+  _mask_img = QImage( _mask.toImage().convertToFormat( QImage::Format_Mono ) );
+}
+\endcode
+  
+  Le `QBitmap` `_mask` servira lors des affichages de collision. C'est
+  une structure optimisée pour l'affichage. Le `QImage` _mask_img est
+  quant à lui optimisé pour les requêtes pixel par pixel et servira
+  pour `ImageShape::randomPoint` et `ImageShape::isInside`.
+
+  Ecrivez ces méthodes selon le principe explicité ci-dessus. On
+  utilisera la méthode `QImage::pixelIndex` qui retourne 0 sur du vide
+  et 1 sur du plein.
+
+  Pour l'affichage, on peut utiliser le code suivant:
+
+\code
+void
+ImageShape::paint(QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
+{
+  painter->drawPixmap( QPointF( 0.0, 0.0 ), _pixmap );
+  if ( _master_shape->currentState() == MasterShape::Collision )
+    {
+      painter->setOpacity( 0.5 );
+      painter->setBackgroundMode( Qt::TransparentMode );
+      painter->setPen  ( _master_shape->currentColor() );
+      painter->drawPixmap( QPointF( 0.0, 0.0 ), _mask );
+    }
+}
+\endcode
+
+  Il ne reste plus qu'à faire une classe `NiceAsteroid` qui s'occupe
+  de créer un joli astéroïde tournant sur lui-même. Il aura besoin de
+  deux transformations `t1` et `t2`. La première s'occupe de ramener
+  l'image au centre (car celle-ci est entre les coordonnées (0,0) et
+  (largeur,hauteur). La deuxième s'occupe juste de la rotation.
+
+  Dans `NiceAsteroid::advance` on augmentera régulièrement l'angle de
+  la transformation `t2`, stockée dans la donnée membre `_t`
+  ci-dessous:
+
+\code
+void NiceAsteroid::advance(int step)
+{
+  if (!step) return;
+  setPos( mapToParent( _speed, 0.0 ) );
+  _t->setAngle( _t->_angle + 2.0 );
+  MasterShape::advance( step );
+}
+\endcode
+
+  @note on pourra ajouter des accesseurs `Transformation::setAngle` et `Transformation::angle` pour lire/changer l'angle d'une transformation.
+
+
+  Vous devez avoir maintenant quelque chose qui ressemble à
+  ci-dessous, en ayant remplacé les Asteroid par des `NiceAsteroid`.
+
+  \image html tp0-6s.png "Ca devient carrément encombré le coin !"
+
+
+  \section cpp_tp0_7 Développements optionnels
+
+  Vous avez toute une base pour développer un petit jeu ou des petites
+  animations. On peut citer les développements suivants:
+
+  - combiner des images pour faire des vaisseaux jolis ou d'autres éléments.
+  - avoir plusieurs images et animer certains éléments graphiques.
+  - interactions avec la souris pour déplacer le vaisseau.
+  - rajouter des tirs qui peuvent détruire les astéroïdes lors d'une collision.
+  - ajout de forces/vitesse/accélération et de réactions à des
+    collisions. On peut s'inspirer du TP3 d'INFO626.
+
+  N'hésitez pas à me poser des questions si vous ne voyez pas comment démarrer.
+
+
+  \section cpp_tp0_8 TP à rendre
+  
+  - Vous écrirez un petit README (texte) dans lequel vous préciserez les points suivants :
+    - nom(s), prénom(s), groupe (monôme ou binôme)
+    - Vous listerez d'abord les points du TP que vous avez abordés, en
+      précisant si selon vous, vous avez traité complètement ou traité
+      partiellement la question.  Précisez aussi pour chaque question
+      si votre code fonctionne ou dans quelle mesure il fonctionne.
+  - vous placerez dans une archive (zip ou tar.gz) votre README
+    ainsi que vos sources/entêtes/fichiers de config/images utiles, de façon à ce que je puisse
+    tout recompiler en tapant "qmake" puis "make".
+  - le nom de votre archive sera de la forme
+    <tt>TP-XXX-YYY.*</tt> où <tt>XXX</tt> et <tt>YYY</tt>
+    désignent les noms respectifs des étudiants du binôme.
+  - vous m'enverrez votre archive via <a
+    href="https://www.lama.univ-savoie.fr/TPLab"> TPLab </a> avant le
+    \b dimanche \b 14 \b octobre \b 2019 \b minuit.
+  
+
+*/

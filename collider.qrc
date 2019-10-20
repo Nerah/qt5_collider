@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/" >
+        <file>images/stars.jpg</file>
+        <file>images/asteroid.gif</file>
+    </qresource>
+</RCC>
+
