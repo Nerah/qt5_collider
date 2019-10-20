@@ -9,9 +9,9 @@
 #ifndef OBJECTS_HPP
 #define OBJECTS_HPP
 
-#include <iostream>
 #include <vector>
 #include <QGraphicsItem>
+#include <QBitmap>
 
 static const int IMAGE_SIZE = 600;
 static const int SZ_BD      = 100;
@@ -96,9 +96,8 @@ struct ImageShape: public GraphicalShape
 {
     const QPixmap _pixmap;
     const MasterShape* _master_shape;
-    QBitmap* _mask;
-    const QImage* _mask_img;
-    const QGraphicsPixmapItem _qpgi; // used for boundingRect method
+    QBitmap _mask;
+    QImage _mask_img;
 
     ImageShape( const QPixmap & pixmap, const MasterShape* master_shape );
 
@@ -127,7 +126,8 @@ struct NiceAsteroid : public MasterShape
   virtual void    advance(int step) override;
 protected:
   double          _speed;
-  Transformation* _t;
+  Transformation* _t1;
+  Transformation* _t2;
 };
 
 /// @brief An asteroid is a simple shape that moves linearly in some direction.

@@ -241,8 +241,8 @@ Transformation::Transformation( GraphicalShape & f, QPointF dx, qreal angle )
     : _f( f ), _dx( dx ), _angle( angle )
 {
     f.setParentItem( this );
-    this->setPos( _dx );
-    this->setRotation( _angle );
+    this->setPos( dx );
+    this->setRotation( angle );
 }
 
 void Transformation::paint( QPainter *, const QStyleOptionGraphicsItem *, QWidget *)
@@ -252,17 +252,12 @@ void Transformation::paint( QPainter *, const QStyleOptionGraphicsItem *, QWidge
 
 QPointF Transformation::randomPoint() const
 {
-    QPointF orgRandPoint = _f.randomPoint();
-    QTransform transf = QTransform().rotate( _angle ).translate( _dx.x(), _dx.y() );
-
-    return transf.map( orgRandPoint );
+    return _dx + _f.randomPoint();
 }
 
 bool Transformation::isInside(const QPointF &p) const
 {
-    QTransform transf = QTransform().translate( -1.0 * _dx.x(), -1.0 * _dx.y() ).rotate( -1* _angle );
-
-    return _f.isInside( transf.map( p ) );
+    return _f.isInside( p - _dx );
 }
 
 QRectF
@@ -283,13 +278,8 @@ void Transformation::setAngle( qreal angle )
 ImageShape::ImageShape( const QPixmap & pixmap, const MasterShape* master_shape )
     : _pixmap( pixmap ), _master_shape( master_shape )
 {
-    QBitmap tmpMask = _pixmap.mask();
-    _mask = &tmpMask;
-
-    QImage tmpImgMask = QImage( _mask->toImage().convertToFormat( QImage::Format_Mono ) );
-    _mask_img = &tmpImgMask;
-
-    QGraphicsPixmapItem tmpQpgi( _pixmap );
+    _mask = _pixmap.mask();
+    _mask_img = QImage( _mask.toImage().convertToFormat( QImage::Format_Mono ) );
 };
 
 void ImageShape::paint( QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
@@ -297,10 +287,10 @@ void ImageShape::paint( QPainter *painter, const QStyleOptionGraphicsItem *, QWi
     painter->drawPixmap( QPointF( 0.0, 0.0 ), _pixmap );
     if ( _master_shape->currentState() == MasterShape::Collision )
     {
-      painter->setOpacity( 0.5 );
-      painter->setBackgroundMode( Qt::TransparentMode );
-      painter->setPen  ( _master_shape->currentColor() );
-      painter->drawPixmap( QPointF( 0.0, 0.0 ), *_mask );
+        painter->setOpacity( 0.5 );
+        painter->setBackgroundMode( Qt::TransparentMode );
+        painter->setPen  ( _master_shape->currentColor() );
+        painter->drawPixmap( QPointF( 0.0, 0.0 ), _mask );
     }
 }
 
@@ -308,21 +298,21 @@ QPointF ImageShape::randomPoint() const
 {
     QPointF p;
     do {
-        p = QPointF( ( RG.generateDouble() * _mask_img->width() ),
-                   ( RG.generateDouble() * _mask_img->height() ) );
-    } while ( !_mask_img->pixelIndex( p.toPoint() ) );
+        p = QPointF( ( RG.generateDouble() * _mask_img.width() ),
+                   ( RG.generateDouble() * _mask_img.height() ) );
+    } while ( _mask_img.pixelIndex( p.toPoint() ) == 0 );
     return p;
 }
 
 bool ImageShape::isInside(const QPointF &p) const
 {
-    return _mask_img->pixelIndex( p.toPoint() );
+    return _mask_img.valid( p.toPoint() ) != 0;
 }
 
 QRectF
 ImageShape::boundingRect() const
 {
-    return _qpgi.boundingRect();
+    return _mask_img.rect();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -363,10 +353,11 @@ NiceAsteroid::NiceAsteroid( QColor cok, QColor cko, double speed, double r )
     // This shape is very simple : just a disk.
     ImageShape* i = new ImageShape( asteroid_pixmap, tmp_asteroid );
 
-    _t = new Transformation( *i, QPointF(0.0,0.0), 0.0 );
+    _t1 = new Transformation( *i, QPointF(0.0,0.0) );
+    _t2 = new Transformation( *i, QPointF( 0.0, 0.0 ), 2.0 );
 
     // Tells the asteroid that it is composed of just a disk.
-    this->setGraphicalShape( _t );
+    this->setGraphicalShape( _t2 );
 }
 
 void
@@ -374,7 +365,7 @@ NiceAsteroid::advance(int step)
 {
     if (!step) return;
     setPos( mapToParent( _speed, 0.0 ) );
-    _t->setAngle( _t->_angle + 2.0 );
+    _t2->setAngle( _t2->_angle + 2.0 );
     MasterShape::advance( step );
 }
 
