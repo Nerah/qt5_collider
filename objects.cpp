@@ -11,6 +11,8 @@
 #include <QGraphicsScene>
 #include <QRandomGenerator>
 #include <QPainter>
+#include <QPixmap>
+#include <QBitmap>
 #include <QStyleOption>
 #include "objects.hpp"
 
@@ -272,6 +274,61 @@ Transformation::boundingRect() const
     return mapRectToParent( _f.boundingRect() );
 }
 
+void Transformation::setAngle( qreal angle )
+{
+    _angle = angle;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// class ImageShape
+///////////////////////////////////////////////////////////////////////////////
+
+ImageShape::ImageShape( const QPixmap & pixmap, const MasterShape* master_shape )
+    : _pixmap( pixmap ), _master_shape( master_shape )
+{
+    QBitmap tmpMask = _pixmap.mask();
+    _mask = &tmpMask;
+
+    QImage tmpImgMask = QImage( _mask->toImage().convertToFormat( QImage::Format_Mono ) );
+    _mask_img = &tmpImgMask;
+
+    QGraphicsPixmapItem tmpQpgi( _pixmap );
+};
+
+void ImageShape::paint( QPainter *painter, const QStyleOptionGraphicsItem *, QWidget *)
+{
+    painter->drawPixmap( QPointF( 0.0, 0.0 ), _pixmap );
+    if ( _master_shape->currentState() == MasterShape::Collision )
+    {
+      painter->setOpacity( 0.5 );
+      painter->setBackgroundMode( Qt::TransparentMode );
+      painter->setPen  ( _master_shape->currentColor() );
+      painter->drawPixmap( QPointF( 0.0, 0.0 ), *_mask );
+    }
+}
+
+QPointF ImageShape::randomPoint() const
+{
+    QPointF p;
+    do {
+        std::cout << "randomPoint" << std::endl;
+      p = QPointF( ( RG.generateDouble() * _mask_img->width() ),
+                   ( RG.generateDouble() * _mask_img->height() ) );
+    } while ( !_mask_img->pixelIndex( p.toPoint() ) );
+    return p;
+}
+
+bool ImageShape::isInside(const QPointF &p) const
+{
+    return _mask_img->pixelIndex( p.toPoint() );
+}
+
+QRectF
+ImageShape::boundingRect() const
+{
+    return _qpgi.boundingRect();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // class Asteroid
 ///////////////////////////////////////////////////////////////////////////////
@@ -291,6 +348,38 @@ Asteroid::advance(int step)
   if (!step) return;
   setPos( mapToParent( _speed, 0.0 ) );
   MasterShape::advance( step );
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+// class NiceAsteroid
+///////////////////////////////////////////////////////////////////////////////
+
+NiceAsteroid::NiceAsteroid( QColor cok, QColor cko, double speed, double r )
+  : MasterShape( cok, cko ), _speed( speed )
+{
+    QPixmap asteroid_pixmap(":/images/asteroid.gif");
+
+    Asteroid asteroid( cok, cko, speed, r );
+    Asteroid* tmp_asteroid = &asteroid;
+
+    // This shape is very simple : just a disk.
+    ImageShape* i = new ImageShape( asteroid_pixmap, tmp_asteroid );
+
+    _t = new Transformation( *i, QPointF(0.0,0.0), 0.0 );
+
+    // Tells the asteroid that it is composed of just a disk.
+    this->setGraphicalShape( _t );
+}
+
+void
+NiceAsteroid::advance(int step)
+{
+    if (!step) return;
+    setPos( mapToParent( _speed, 0.0 ) );
+    _t->setAngle( _t->_angle + 2.0 );
+    MasterShape::advance( step );
 }
 
 
@@ -325,7 +414,7 @@ SpaceTruck::advance(int step)
 
 
 ///////////////////////////////////////////////////////////////////////////////
-// class SpaceTruck
+// class Enterprise
 ///////////////////////////////////////////////////////////////////////////////
 
 Enterprise::Enterprise( QColor cok, QColor cko, double speed )

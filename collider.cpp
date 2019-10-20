@@ -58,7 +58,7 @@ int main(int argc, char **argv)
   for (int i = 0; i < AsteroidCount; ++i) {
 
     // A master shape gathers all the elements of the shape.
-    MasterShape* asteroid = new Asteroid( AsteroidOkColor,
+    MasterShape* asteroid = new NiceAsteroid( AsteroidOkColor,
                                           AsteroidKoColor,
                                           ( qrand() % 20 + 20 ) / 10.0, /* speed */
                                           (10.0 + qrand() % 40) );

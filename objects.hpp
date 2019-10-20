@@ -85,6 +85,24 @@ struct Transformation: public GraphicalShape
     virtual QPointF randomPoint() const override;
     virtual bool isInside( const QPointF& p ) const override;
     virtual QRectF  boundingRect() const override;
+    void setAngle( qreal angle );
+};
+
+struct ImageShape: public GraphicalShape
+{
+    const QPixmap & _pixmap;
+    const MasterShape* _master_shape;
+    QBitmap* _mask;
+    const QImage* _mask_img;
+    const QGraphicsPixmapItem _qpgi; // used for boundingRect method
+
+    ImageShape( const QPixmap & pixmap, const MasterShape* master_shape );
+
+    virtual void paint( QPainter *painter, const QStyleOptionGraphicsItem *,
+                           QWidget *) override;
+    virtual QPointF randomPoint() const override;
+    virtual bool isInside( const QPointF& p ) const override;
+    virtual QRectF  boundingRect() const override;
 };
 
 /// @brief An asteroid is a simple shape that moves linearly in some direction.
@@ -95,6 +113,17 @@ struct Asteroid : public MasterShape
   virtual void    advance(int step) override;
 protected:
   double          _speed;
+};
+
+/// @brief A NiceAsteroid is a simple shape that moves linearly in some direction.
+struct NiceAsteroid : public MasterShape
+{
+  NiceAsteroid( QColor cok, QColor cko, double speed, double r );
+  // moves the asteroid forward according to its speed.
+  virtual void    advance(int step) override;
+protected:
+  double          _speed;
+  Transformation* _t;
 };
 
 /// @brief An asteroid is a simple shape that moves linearly in some direction.
