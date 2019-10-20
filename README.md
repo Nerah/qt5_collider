@@ -1,4 +1,4 @@
-##### Alexandre ASCENCI
+##### Alexandre ASCENCI, M1 Informatique, Université Savoie Mont-Blanc
 
 ## Premiers objets graphiques
 
