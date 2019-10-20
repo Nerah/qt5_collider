@@ -1,5 +1,16 @@
 ##### Alexandre ASCENCI, M1 Informatique, Université Savoie Mont-Blanc
 
+> Pour remplacer les asteroids actuels par ceux présents en
+> début de TP, il suffit d'adapter la ligne suivante dans collider.cpp:
+> ```
+> MasterShape* asteroid = new NiceAsteroid( AsteroidOkColor,...
+>
+> MasterShape* asteroid = new Asteroid( AsteroidOkColor,...
+> ```
+>
+> Dans collider.cpp, on peut changer les paramètres du jeu
+> dans l'entête.
+
 ## Premiers objets graphiques
 
 ### Points abordés
