@@ -17,7 +17,8 @@
 
 ### Points abordés
 
-
+- La classe Transformation
+- La classe Enterprise
 
 ## Des images, des figures
 
