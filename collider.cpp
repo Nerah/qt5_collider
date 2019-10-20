@@ -32,6 +32,11 @@ static const int SpaceTruckCount = 5;
 static const QColor SpaceTruckOkColor = QColor( 102, 204, 0 );
 static const QColor SpaceTruckKoColor = QColor( 255, 255, 102 );
 
+// Enterprise
+static const int EnterpriseCount = 1;
+static const QColor EnterpriseOkColor = QColor( 122, 122, 122 );
+static const QColor EnterpriseKoColor = QColor( 200, 0, 0 );
+
 /***************************************************************************/
 
 int main(int argc, char **argv)
@@ -82,6 +87,23 @@ int main(int argc, char **argv)
     graphical_scene.addItem( spaceTruck );
     // and to the logical scene
     logical_scene->formes.push_back( spaceTruck );
+  }
+
+  // Creates a few space enterprises...
+  for (int i = 0; i < EnterpriseCount; ++i) {
+
+    // A master shape gathers all the elements of the shape.
+    MasterShape* enterprise = new Enterprise( EnterpriseOkColor,
+                                              EnterpriseKoColor,
+                                              ( qrand() % 20 + 20 ) / 10.0 );
+    // Set direction and position
+    enterprise->setRotation( qrand() % 360 );
+    enterprise->setPos( IMAGE_SIZE/2 + ::sin((i * 6.28) / SpaceTruckCount) * 200,
+                      IMAGE_SIZE/2 + ::cos((i * 6.28) / SpaceTruckCount) * 200 );
+    // Add it to the graphical scene
+    graphical_scene.addItem( enterprise );
+    // and to the logical scene
+    logical_scene->formes.push_back( enterprise );
   }
 
   // Standard stuff to initialize a graphics view with some background.

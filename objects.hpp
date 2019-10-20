@@ -9,6 +9,7 @@
 #ifndef OBJECTS_HPP
 #define OBJECTS_HPP
 
+#include <iostream>
 #include <vector>
 #include <QGraphicsItem>
 
@@ -61,30 +62,30 @@ struct Union: public GraphicalShape
     GraphicalShape & _f1;
     GraphicalShape & _f2;
 
-    Union( GraphicalShape* f1, GraphicalShape* f2 )
-        : _f1(*f1), _f2(*f2) {}
+    Union( GraphicalShape & f1, GraphicalShape & f2 );
 
-    virtual void paint( QPainter *painter, const QStyleOptionGraphicsItem *option,
-                           QWidget *widget) override;
+    virtual void paint( QPainter *, const QStyleOptionGraphicsItem *,
+                           QWidget *) override;
     virtual QPointF randomPoint() const override;
     virtual bool isInside( const QPointF& p ) const override;
     virtual QRectF  boundingRect() const override;
 };
 
-//struct Transformation: public GraphicalShape
-//{
-//    GraphicalShape* _f;
-//    QPointF dx;
-//    qreal angle;
+struct Transformation: public GraphicalShape
+{
+    GraphicalShape & _f;
+    QPointF _dx;
+    qreal _angle;
 
-//    GraphicalShape( GraphicalShape* f, QPoint dx, qreal angle );
+    Transformation( GraphicalShape & f, QPointF dx );
+    Transformation( GraphicalShape & f, QPointF dx, qreal angle );
 
-//    virtual void paint( QPainter *painter, const QStyleOptionGraphicsItem *option,
-//                           QWidget *widget) override;
-//    virtual QPointF randomPoint() const override;
-//    virtual bool isInside( const QPointF& p ) const override;
-//    virtual QRectF  boundingRect() const override;
-//};
+    virtual void paint( QPainter *, const QStyleOptionGraphicsItem *,
+                           QWidget *) override;
+    virtual QPointF randomPoint() const override;
+    virtual bool isInside( const QPointF& p ) const override;
+    virtual QRectF  boundingRect() const override;
+};
 
 /// @brief An asteroid is a simple shape that moves linearly in some direction.
 struct Asteroid : public MasterShape
@@ -106,6 +107,15 @@ protected:
   double          _speed;
 };
 
+/// @brief An enterprise is a simple shape that moves linearly in some direction.
+struct Enterprise : public MasterShape
+{
+  Enterprise( QColor cok, QColor cko, double speed );
+  // moves the asteroid forward according to its speed.
+  virtual void    advance(int step) override;
+protected:
+  double          _speed;
+};
 
 /// @brief A disk is a simple graphical shape.
 ///

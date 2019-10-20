@@ -192,10 +192,16 @@ MasterShape::boundingRect() const
 // class Union
 ///////////////////////////////////////////////////////////////////////////////
 
-void Union::paint( QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
+Union::Union( GraphicalShape & f1, GraphicalShape & f2 )
+    : _f1(f1), _f2(f2)
 {
-  _f1.paint( painter, option, widget );
-  _f2.paint( painter, option, widget );
+    f1.setParentItem( this );
+    f2.setParentItem( this );
+}
+
+void Union::paint( QPainter *, const QStyleOptionGraphicsItem *, QWidget *)
+{
+  //
 }
 
 QPointF Union::randomPoint() const
@@ -219,6 +225,51 @@ Union::boundingRect() const
   QRectF f1 = mapRectToParent( _f1.boundingRect() );
   QRectF f2 = mapRectToParent( _f2.boundingRect() );
   return f1 | f2;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// class Transformation
+///////////////////////////////////////////////////////////////////////////////
+
+Transformation::Transformation( GraphicalShape & f, QPointF dx )
+    : _f( f ), _dx( dx ), _angle( 0.0 )
+{
+    f.setParentItem( this );
+    this->setPos( _dx );
+};
+
+Transformation::Transformation( GraphicalShape & f, QPointF dx, qreal angle )
+    : _f( f ), _dx( dx ), _angle( angle )
+{
+    f.setParentItem( this );
+    this->setPos( _dx );
+    this->setRotation( _angle );
+}
+
+void Transformation::paint( QPainter *, const QStyleOptionGraphicsItem *, QWidget *)
+{
+    //
+}
+
+QPointF Transformation::randomPoint() const
+{
+    QPointF orgRandPoint = _f.randomPoint();
+    QTransform transf = QTransform().rotate( _angle ).translate( _dx.x(), _dx.y() );
+
+    return transf.map( orgRandPoint );
+}
+
+bool Transformation::isInside(const QPointF &p) const
+{
+    QTransform transf = QTransform().translate( -1.0 * _dx.x(), -1.0 * _dx.y() ).rotate( -1* _angle );
+
+    return _f.isInside( transf.map( p ) );
+}
+
+QRectF
+Transformation::boundingRect() const
+{
+    return mapRectToParent( _f.boundingRect() );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -256,8 +307,8 @@ SpaceTruck::SpaceTruck( QColor cok, QColor cko, double speed )
   Rectangle* d2 = new Rectangle( QPointF( 10, -10 ), QPointF( 30, 10 ), this );
   Rectangle* d3 = new Rectangle( QPointF( 0, -3 ), QPointF( 10, 3 ), this );
 
-  Union* u23 = new Union( d2, d3 );
-  Union* u = new Union( d1, u23 );
+  Union* u23 = new Union( *d2, *d3 );
+  Union* u = new Union( *d1, *u23 );
   // Tells the SpaceTruck that it is composed of just a disk.
   this->setGraphicalShape( u );
 }
@@ -269,6 +320,44 @@ SpaceTruck::advance(int step)
   setPos( mapToParent( _speed, 0.0 ) );
   MasterShape::advance( step );
   MasterShape::setRotation( MasterShape::rotation() + 1 % 360 );
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+// class SpaceTruck
+///////////////////////////////////////////////////////////////////////////////
+
+Enterprise::Enterprise( QColor cok, QColor cko, double speed )
+  : MasterShape( cok, cko ), _speed( speed )
+{
+    Rectangle*      r1 = new Rectangle( QPointF( -100, -8 ), QPointF( 0, 8 ), this );
+    Rectangle*      r2 = new Rectangle( QPointF( -100, -8 ), QPointF( 0, 8 ), this );
+    Rectangle*      rb = new Rectangle( QPointF( -40, -9 ), QPointF( 40, 9 ), this );
+    Rectangle*      s1 = new Rectangle( QPointF( -25, -5 ), QPointF( 25, 5 ), this );
+    Rectangle*      s2 = new Rectangle( QPointF( -25, -5 ), QPointF( 25, 5 ), this );
+    Disk*            d = new Disk( 40.0, this );
+    Transformation* t1 = new Transformation( *r1, QPointF( 0., 40.0 ) );
+    Transformation* t2 = new Transformation( *r2, QPointF( 0., -40.0 ) );
+    Transformation* td = new Transformation( *d, QPointF( 70., 0.0 ) );
+    Transformation*ts1 = new Transformation( *s1, QPointF(-30.0,0.0), 0.0 );
+    Transformation*us1 = new Transformation( *ts1, QPointF(0.0,0.0), 45.0 );
+    Transformation*ts2 = new Transformation( *s2, QPointF(-30.0,0.0), 0.0 );
+    Transformation*us2 = new Transformation( *ts2, QPointF(0.0,0.0), -45.0 );
+    Union*        back = new Union( *t1, *t2 );
+    Union*        head = new Union( *rb, *td );
+    Union*        legs = new Union( *us1, *us2 );
+    Union*        body = new Union( *legs, *back );
+    Union*         all = new Union( *head, *body );
+    this->setGraphicalShape( all );
+}
+
+void
+Enterprise::advance(int step)
+{
+  if (!step) return;
+  setPos( mapToParent( _speed, 0.0 ) );
+  MasterShape::advance( step );
 }
 
 
