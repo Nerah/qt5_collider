@@ -311,8 +311,7 @@ QPointF ImageShape::randomPoint() const
 {
     QPointF p;
     do {
-        std::cout << "randomPoint" << std::endl;
-      p = QPointF( ( RG.generateDouble() * _mask_img->width() ),
+        p = QPointF( ( RG.generateDouble() * _mask_img->width() ),
                    ( RG.generateDouble() * _mask_img->height() ) );
     } while ( !_mask_img->pixelIndex( p.toPoint() ) );
     return p;

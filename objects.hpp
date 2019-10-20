@@ -56,9 +56,10 @@ protected:
   QColor          _cok, _cko;
 };
 
-///
+/// @brief Merge two shapes to create a more complex shape.
 struct Union: public GraphicalShape
 {
+    // The two shapes that are merged.
     GraphicalShape & _f1;
     GraphicalShape & _f2;
 
@@ -73,8 +74,11 @@ struct Union: public GraphicalShape
 
 struct Transformation: public GraphicalShape
 {
+    // The shape that is transformed.
     GraphicalShape & _f;
+    // A vector used for the translation of the shape.
     QPointF _dx;
+    // A real used for the rotation of the shape.
     qreal _angle;
 
     Transformation( GraphicalShape & f, QPointF dx );
@@ -90,7 +94,7 @@ struct Transformation: public GraphicalShape
 
 struct ImageShape: public GraphicalShape
 {
-    const QPixmap & _pixmap;
+    const QPixmap _pixmap;
     const MasterShape* _master_shape;
     QBitmap* _mask;
     const QImage* _mask_img;
