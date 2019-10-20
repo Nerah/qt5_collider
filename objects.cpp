@@ -16,9 +16,6 @@
 #include <QStyleOption>
 #include "objects.hpp"
 
-static const double Pi = 3.14159265358979323846264338327950288419717;
-//static double TwoPi = 2.0 * Pi;
-
 // Global variables for simplicity.
 static QRandomGenerator RG;
 LogicalScene* logical_scene = 0;
